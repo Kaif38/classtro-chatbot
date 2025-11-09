@@ -80,7 +80,7 @@ router.post('/chats/:chatId/message', auth, async (req, res) => {
     }, {
       headers: {
         "Authorization": `Bearer ${API_KEY}`,
-        "HTTP-Referer": req.headers.origin || 'http://localhost:3000',
+        "HTTP-Referer": req.headers.origin || 'https://classtro-chatbot.onrender.com',
         "X-Title": "Classtro AI",
         "Content-Type": "application/json"
       }
