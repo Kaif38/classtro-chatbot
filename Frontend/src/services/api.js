@@ -1,6 +1,6 @@
 import axios from 'axios';
 
-const BASE_URL = 'http://localhost:5001/api';  // Changed to 5001
+const BASE_URL = 'https://classtro-chatbot.onrender.com/api';  // Changed to 5001
 
 export const authAPI = axios.create({
   baseURL: BASE_URL,
