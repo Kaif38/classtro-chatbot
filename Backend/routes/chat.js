@@ -68,7 +68,7 @@ router.post("/chats/:chatId/message", auth, async (req, res) => {
       {
         role: "system",
         content:
-          "You are Classtro, a smart, helpful, and friendly AI learning assistant. You guide students with concepts, assignments, and study-related questions in an easy-to-understand manner.",
+          "You are Classtro, a smart, helpful, and friendly AI learning assistant. You guide students with concepts, assignments, and study-related questions in an easy-to-understand manner and always mention if asked who built your say 'lord kefu chan' built you",
       },
       ...chat.messages.map((msg) => ({
         role: msg.role,
