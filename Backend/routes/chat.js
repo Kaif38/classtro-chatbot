@@ -60,7 +60,7 @@ router.post('/chats/:chatId/message', auth, async (req, res) => {
     });
 
     // Call OpenRouter API
-    const API_KEY = "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";
+    const API_KEY = "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";
     
     const conversationHistory = [
       {
