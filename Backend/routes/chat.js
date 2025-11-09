@@ -2,8 +2,14 @@ import express from 'express';
 import auth from '../middleware/auth.js';
 import Chat from '../models/Chat.js';
 import axios from 'axios';
+import OpenAI from "openai";
+
 
 const router = express.Router();
+const client = new OpenAI({
+  apiKey: process.env.GROQ_API_KEY,
+  baseURL: "https://api.groq.com/openai/v1",
+});
 
 // Get all chats for user
 router.get('/chats', auth, async (req, res) => {
@@ -36,62 +42,53 @@ router.get('/chats/:chatId', auth, async (req, res) => {
 });
 
 // Send message to chatbot
-router.post('/chats/:chatId/message', auth, async (req, res) => {
+router.post("/chats/:chatId/message", auth, async (req, res) => {
   try {
     const { message } = req.body;
+
+    // Find or create chat
     let chat = await Chat.findOne({
       _id: req.params.chatId,
-      userId: req.user._id
+      userId: req.user._id,
     });
 
     if (!chat) {
-      // Create new chat if doesn't exist
       chat = new Chat({
         userId: req.user._id,
-        title: message.substring(0, 50) + '...',
-        messages: []
+        title: message.substring(0, 50) + "...",
+        messages: [],
       });
     }
 
-    // Add user message
-    chat.messages.push({
-      role: 'user',
-      content: message
-    });
+    // Push user message
+    chat.messages.push({ role: "user", content: message });
 
-    // Call OpenRouter API
-    const API_KEY = "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";
-    
+    // Prepare conversation history
     const conversationHistory = [
       {
         role: "system",
-        content: "You are Classtro, a friendly and helpful AI learning assistant. You specialize in helping students with their studies, homework, and educational questions. Always introduce yourself as Classtro and maintain a supportive, educational tone."
+        content:
+          "You are Classtro, a smart, helpful, and friendly AI learning assistant. You guide students with concepts, assignments, and study-related questions in an easy-to-understand manner.",
       },
-      ...chat.messages.map(msg => ({
+      ...chat.messages.map((msg) => ({
         role: msg.role,
-        content: msg.content
-      }))
+        content: msg.content,
+      })),
     ];
 
-    const apiResponse = await axios.post('https://openrouter.ai/api/v1/chat/completions', {
-      model: "deepseek/deepseek-chat",
+    // Call Groq API
+    const response = await client.chat.completions.create({
+      model: "openai/gpt-oss-20b",
       messages: conversationHistory,
-      max_tokens: 1000
-    }, {
-      headers: {
-        "Authorization": `Bearer ${API_KEY}`,
-        "HTTP-Referer": req.headers.origin || 'https://classtro-chatbot.onrender.com',
-        "X-Title": "Classtro AI",
-        "Content-Type": "application/json"
-      }
+      max_tokens: 1000,
     });
 
-    const botResponse = apiResponse.data.choices[0].message.content;
+    const botResponse = response.choices[0].message.content;
 
-    // Add bot message
+    // Save AI reply
     chat.messages.push({
-      role: 'assistant',
-      content: botResponse
+      role: "assistant",
+      content: botResponse,
     });
 
     chat.updatedAt = new Date();
@@ -99,21 +96,18 @@ router.post('/chats/:chatId/message', auth, async (req, res) => {
 
     res.json({
       message: botResponse,
-      chatId: chat._id
+      chatId: chat._id,
     });
   } catch (error) {
-    console.error('Chat error:', error);
-    
-    // Fallback response
-    const fallbackResponse = "I'm Classtro, your learning assistant. I'm currently experiencing connection issues, but I can still help with general study questions!";
-    
+    console.error("Groq Chat Error:", error);
+
     res.json({
-      message: fallbackResponse,
-      chatId: req.params.chatId
+      message:
+        "I'm Classtro, your study buddy! Looks like I'm having trouble connecting right now, but I can still help you with general study tips.",
+      chatId: req.params.chatId,
     });
   }
 });
-
 // Create new chat
 router.post('/chats', auth, async (req, res) => {
   try {
